@@ -50,10 +50,22 @@ class TruthDefect:
 
 
 _HEADING_RE = re.compile(r"^\s*#{1,4}\s*(critical|serious|minor)\b", re.IGNORECASE)
+# Match a file:line reference. Files come in two shapes:
+#   1. dotted-suffix files (foo/bar.py, src/x.ts)
+#   2. extensionless conventional names (Dockerfile, Makefile, Rakefile, ...)
+# Both shapes followed by `:<digits>`.
 _FILE_LINE_RE = re.compile(
     r"""
     (?:^|\s|`)
     (?P<file>
+        # extensionless conventional names with optional path prefix
+        (?: [\w./\-]+ / )?
+        (?: Dockerfile | Makefile | Rakefile | Gemfile | Podfile
+            | Procfile | Vagrantfile | Jenkinsfile | Brewfile
+            | CMakeLists\.txt
+        )
+        |
+        # dotted-suffix files
         [\w./\-]+? \. [a-zA-Z0-9]+
     )
     : (?P<line> \d+ )
@@ -117,14 +129,29 @@ def parse_findings(report: str) -> list[Finding]:
         )
         current_bullet = []
 
+    in_fenced_block = False
     for ln in lines:
+        # Track fenced code blocks so a `# comment` line inside ``` ... ```
+        # is not mistaken for a markdown heading.
+        if ln.lstrip().startswith("```"):
+            if current_bullet:
+                current_bullet.append(ln)
+            in_fenced_block = not in_fenced_block
+            continue
+
         h = _HEADING_RE.match(ln)
-        if h:
+        if h and not in_fenced_block:
             flush_bullet()
             current_severity = h.group(1).lower()
             continue
-        # any other heading ends the current section
-        if ln.lstrip().startswith("#") and not h:
+        # Any other heading ends the current section. Only un-indented `#`
+        # lines count as markdown headings — quoted code (which reviewers
+        # are explicitly told to include) often starts with `#` (Python,
+        # shell, TOML, Makefile comments) and must not be misread as a
+        # heading. CommonMark allows up to 3 spaces of indent; we treat
+        # those as non-heading too because reviewer wrappers always emit
+        # un-indented headings.
+        if ln.startswith("#") and not h and not in_fenced_block:
             flush_bullet()
             current_severity = None
             continue

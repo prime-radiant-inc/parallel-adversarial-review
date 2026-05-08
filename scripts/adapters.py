@@ -71,6 +71,32 @@ class InvocationResult:
     error: str | None = None
 
 
+# Conservative cap that keeps us under platform ARG_MAX. macOS is ~1 MB
+# total argv+envp, Linux is typically ~2 MB. We cap a single-arg prompt
+# at 512 KB to leave headroom for env, the binary path, and the rest of argv.
+ARGV_PROMPT_CAP = 512 * 1024
+
+
+def _argv_size_ok(prompt: str) -> bool:
+    return len(prompt.encode("utf-8")) <= ARGV_PROMPT_CAP
+
+
+def _argv_too_large(adapter: "Adapter", prompt: str) -> InvocationResult:
+    size = len(prompt.encode("utf-8"))
+    return InvocationResult(
+        name=adapter.name,
+        ok=False,
+        stdout="",
+        stderr="",
+        duration_sec=0.0,
+        error=(
+            f"prompt is {size} bytes; exceeds argv cap of {ARGV_PROMPT_CAP}. "
+            f"Switch this adapter to prompt_via=\"stdin\" in adapters.toml, "
+            f"or shrink the review target (e.g., review a smaller diff)."
+        ),
+    )
+
+
 def invoke(
     adapter: Adapter,
     prompt: str,
@@ -92,7 +118,7 @@ def invoke(
             return InvocationResult(
                 name=adapter.name,
                 ok=True,
-                stdout=mock_file.read_text(),
+                stdout=mock_file.read_text(encoding="utf-8"),
                 stderr="",
                 duration_sec=time.monotonic() - start,
             )
@@ -119,6 +145,8 @@ def invoke(
     stdin_data: str | None = None
 
     if adapter.prompt_via == "argv":
+        if not _argv_size_ok(prompt):
+            return _argv_too_large(adapter, prompt)
         cmd.append(prompt)
     elif adapter.prompt_via == "argv-after-flag":
         flag = adapter.prompt_flag
@@ -131,6 +159,8 @@ def invoke(
                 duration_sec=0.0,
                 error=f"prompt_flag '{flag}' not found in argv for {adapter.name}",
             )
+        if not _argv_size_ok(prompt):
+            return _argv_too_large(adapter, prompt)
         idx = cmd.index(flag)
         cmd.insert(idx + 1, prompt)
     elif adapter.prompt_via == "stdin":
@@ -190,6 +220,9 @@ def main() -> int:
         print("usage: adapters.py list", file=sys.stderr)
         return 2
     adapters = load_adapters()
+    if not adapters:
+        print("(no adapters configured in adapters.toml)", file=sys.stderr)
+        return 0
     width = max(len(n) for n in adapters)
     for name, a in sorted(adapters.items()):
         status = "ENABLED" if a.enabled else "DISABLED"

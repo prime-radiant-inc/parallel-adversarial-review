@@ -69,6 +69,57 @@ class TestParseFindings(unittest.TestCase):
         minors = [f for f in findings if f.severity == "minor"]
         self.assertEqual(len(minors), 1)
 
+    def test_quoted_code_with_python_comment_does_not_truncate(self):
+        """Regression: parser was treating any `#`-prefixed line in a quoted
+        code block as a markdown heading and silently dropping later findings.
+        Reviewers are told to quote code; quoted Python/shell/TOML lines often
+        start with `#`."""
+        report = """\
+# Findings
+
+## Critical
+
+- file: a.py:5
+  description: real critical bug
+  quote: |
+    x = compute(user_input)
+    # this is a comment in the quoted code
+    return x
+
+- file: b.py:10
+  description: another critical bug
+  quote: |
+    danger()
+"""
+        findings = parse_findings(report)
+        crit = [f for f in findings if f.severity == "critical"]
+        self.assertEqual(
+            len(crit),
+            2,
+            f"expected 2 critical findings; got {len(crit)}: {[f.file for f in crit]}",
+        )
+        self.assertEqual({f.file for f in crit}, {"a.py", "b.py"})
+
+    def test_quoted_code_in_fenced_block_with_comment_does_not_truncate(self):
+        report = """\
+## Critical
+
+- file: x.py:1
+  description: bug
+  quote:
+    ```python
+    # this comment must not break parsing
+    do_thing()
+    ```
+
+- file: y.py:2
+  description: another bug
+"""
+        findings = parse_findings(report)
+        crit = [f for f in findings if f.severity == "critical"]
+        self.assertEqual(len(crit), 2)
+        self.assertEqual({f.file for f in crit}, {"x.py", "y.py"})
+
     def test_handles_dropped_section_without_eating_findings(self):
         report = """\
 # MMAR Final Findings

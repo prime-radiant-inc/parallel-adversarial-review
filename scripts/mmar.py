@@ -27,6 +27,7 @@ import json
 import os
 import random
 import shutil
+import subprocess
 import sys
 import time
 from datetime import datetime, timezone
@@ -42,7 +43,7 @@ SKILL_DIR = PLUGIN_ROOT / "skills" / "multi-model-adversarial-review"
 
 
 def read_template(name: str) -> str:
-    return (SKILL_DIR / name).read_text()
+    return (SKILL_DIR / name).read_text(encoding="utf-8")
 
 
 def build_reviewer_prompt(
@@ -106,7 +107,9 @@ def _extract_code_block(markdown: str) -> str:
             continue
         if in_block:
             out.append(ln)
-    return markdown  # fallback if no block found
+    raise ValueError(
+        "no fenced code block found in template; cannot extract prompt body"
+    )
 
 
 DEFAULT_DOMAIN_PROMPT = """\
@@ -133,9 +136,11 @@ def stage1_parallel_reviews(
     def run_one(name: str, a: Adapter) -> tuple[str, dict]:
         prompt = build_reviewer_prompt(name, n, domain_prompt, review_target)
         result = invoke(a, prompt, workdir, mock_stage)
-        (stage_out / f"{name}.md").write_text(result.stdout)
+        (stage_out / f"{name}.md").write_text(result.stdout, encoding="utf-8")
         if result.stderr:
-            (stage_out / f"{name}.stderr.log").write_text(result.stderr)
+            (stage_out / f"{name}.stderr.log").write_text(
+                result.stderr, encoding="utf-8"
+            )
         return name, {
             "ok": result.ok,
             "stdout": result.stdout,
@@ -194,7 +199,9 @@ def stage2_cross_critique(
                 "duration_sec": 0.0,
                 "error": None,
             }
-            (stage_out / f"{critic}__on__{reviewed}.md").write_text(payload["stdout"])
+            (stage_out / f"{critic}__on__{reviewed}.md").write_text(
+                payload["stdout"], encoding="utf-8"
+            )
             return f"{critic}__on__{reviewed}", payload
 
         prompt = build_critic_prompt(critic, reviewed, review_target, reviewed_findings)
@@ -219,10 +226,12 @@ def stage2_cross_critique(
         else:
             result = invoke(a, prompt, workdir, None)
 
-        (stage_out / f"{critic}__on__{reviewed}.md").write_text(result.stdout)
+        (stage_out / f"{critic}__on__{reviewed}.md").write_text(
+            result.stdout, encoding="utf-8"
+        )
         if result.stderr:
             (stage_out / f"{critic}__on__{reviewed}.stderr.log").write_text(
-                result.stderr
+                result.stderr, encoding="utf-8"
             )
         return f"{critic}__on__{reviewed}", {
             "ok": result.ok,
@@ -282,11 +291,46 @@ def stage3_synthesize(
     else:
         result = invoke(a, prompt, workdir, None)
 
-    (stage_out / "synthesis.md").write_text(result.stdout)
+    body = result.stdout
+    if not result.ok:
+        body = (
+            f"# MMAR Final Findings\n\n"
+            f"**Synthesis failed.** The synthesizer ({synthesizer_name}) "
+            f"returned an error: {result.error or 'unknown'}.\n\n"
+            f"The per-stage artifacts in `stage1/` and `stage2/` are the raw "
+            f"reviewer findings — read them directly to recover the work.\n\n"
+            f"Partial output (if any) follows:\n\n{result.stdout}\n"
+        )
+    (stage_out / "synthesis.md").write_text(body, encoding="utf-8")
     if result.stderr:
-        (stage_out / "synthesis.stderr.log").write_text(result.stderr)
-    (out_dir / "findings.md").write_text(result.stdout)
-    return result.stdout
+        (stage_out / "synthesis.stderr.log").write_text(
+            result.stderr, encoding="utf-8"
+        )
+    (out_dir / "findings.md").write_text(body, encoding="utf-8")
+    return body
+
+
+# Limits for directory-mode review. Designed to keep prompt size sane and
+# prevent dumping vendored deps / lockfiles / build artifacts into model context.
+MAX_FILE_BYTES = 256 * 1024     # skip files larger than 256 KB
+MAX_TOTAL_BYTES = 4 * 1024 * 1024  # cap total review payload at 4 MB
+MAX_FILE_COUNT = 200            # cap number of files
+IGNORED_DIRS = {
+    ".git", "__pycache__", "node_modules", ".venv", "venv",
+    ".tox", ".mypy_cache", ".pytest_cache", "dist", "build", ".next",
+    "target", ".gradle", ".cargo", "vendor",
+}
+IGNORED_FILE_SUFFIXES = {
+    ".pyc", ".pyo", ".so", ".dylib", ".dll", ".o", ".a",
+    ".jpg", ".jpeg", ".png", ".gif", ".webp", ".pdf", ".zip", ".tar",
+    ".gz", ".bz2", ".xz", ".7z", ".jar", ".war", ".class",
+    ".lock", ".lockb",  # package-manager lockfiles
+}
+IGNORED_FILE_NAMES = {
+    "package-lock.json", "yarn.lock", "pnpm-lock.yaml", "Cargo.lock",
+    "Pipfile.lock", "poetry.lock", "composer.lock", "Gemfile.lock",
+    "go.sum",
+}
 
 
 def review_target_from_path(path: str) -> str:
@@ -294,21 +338,131 @@ def review_target_from_path(path: str) -> str:
         return sys.stdin.read()
     p = Path(path)
     if p.is_file():
-        return p.read_text()
+        return p.read_text(encoding="utf-8", errors="replace")
     if p.is_dir():
-        # produce a flat dump of the directory
-        out: list[str] = []
-        for f in sorted(p.rglob("*")):
-            if f.is_file() and not _is_ignored(f):
-                rel = f.relative_to(p)
-                out.append(f"=== {rel} ===\n{f.read_text(errors='replace')}\n")
-        return "\n".join(out)
+        return _bundle_directory(p)
     raise SystemExit(f"review target not found: {path}")
+
+
+def _bundle_directory(root: Path) -> str:
+    """Dump a directory into a single review-target string, with caps and
+    symlink containment. Prefers `git ls-files` when available so .gitignore
+    and submodules behave correctly; falls back to filesystem walk otherwise.
+    """
+    root_resolved = root.resolve()
+    files = _enumerate_files(root, root_resolved)
+
+    out: list[str] = []
+    total_bytes = 0
+    skipped: list[tuple[str, str]] = []
+
+    for f in files:
+        if len(out) >= MAX_FILE_COUNT:
+            skipped.append((str(f.relative_to(root)), "file count cap reached"))
+            continue
+        try:
+            size = f.stat().st_size
+        except OSError as e:
+            skipped.append((str(f), f"stat failed: {e}"))
+            continue
+        if size > MAX_FILE_BYTES:
+            skipped.append(
+                (str(f.relative_to(root)), f"file size {size} > {MAX_FILE_BYTES}")
+            )
+            continue
+        if total_bytes + size > MAX_TOTAL_BYTES:
+            skipped.append(
+                (str(f.relative_to(root)), "total byte cap reached")
+            )
+            continue
+        try:
+            text = f.read_text(encoding="utf-8", errors="replace")
+        except OSError as e:
+            skipped.append((str(f), f"read failed: {e}"))
+            continue
+        rel = f.relative_to(root)
+        out.append(f"=== {rel} ===\n{text}\n")
+        total_bytes += size
+
+    if skipped:
+        out.append(
+            "=== _skipped (not included in review) ===\n"
+            + "\n".join(f"{rel}: {why}" for rel, why in skipped)
+            + "\n"
+        )
+    return "\n".join(out)
+
+
+def _enumerate_files(root: Path, root_resolved: Path) -> list[Path]:
+    """List the files under `root` worth reviewing, with symlink containment.
+
+    Prefers `git ls-files` when `root` is in a git repo; falls back to rglob.
+    Either way, every returned path is verified to resolve inside root_resolved.
+    """
+    files: list[Path]
+    git_files = _git_ls_files(root)
+    if git_files is not None:
+        files = git_files
+    else:
+        files = [
+            f for f in sorted(root.rglob("*"))
+            if f.is_file() and not _is_ignored(f)
+        ]
+
+    safe: list[Path] = []
+    for f in files:
+        try:
+            resolved = f.resolve()
+        except (OSError, RuntimeError):
+            continue
+        # symlink containment: resolved path must be inside the resolved root.
+        try:
+            resolved.relative_to(root_resolved)
+        except ValueError:
+            continue
+        if not resolved.is_file():
+            continue
+        if _is_ignored_by_name(resolved):
+            continue
+        safe.append(f)
+    return safe
+
+
+def _git_ls_files(root: Path) -> list[Path] | None:
+    """Return the list of tracked + untracked-not-ignored files in `root` if
+    `root` is inside a git repo; otherwise None."""
+    try:
+        proc = subprocess.run(
+            [
+                "git", "-C", str(root), "ls-files",
+                "--cached", "--others", "--exclude-standard",
+                "-z",
+            ],
+            capture_output=True, check=False, timeout=10,
+        )
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return None
+    if proc.returncode != 0:
+        return None
+    raw = proc.stdout.decode("utf-8", errors="replace")
+    rels = [r for r in raw.split("\x00") if r]
+    return [root / r for r in rels]
 
 
 def _is_ignored(p: Path) -> bool:
     parts = set(p.parts)
-    return bool(parts & {".git", "__pycache__", "node_modules", ".venv"})
+    if parts & IGNORED_DIRS:
+        return True
+    return _is_ignored_by_name(p)
+
+
+def _is_ignored_by_name(p: Path) -> bool:
+    if p.name in IGNORED_FILE_NAMES:
+        return True
+    suffix = p.suffix.lower()
+    if suffix in IGNORED_FILE_SUFFIXES:
+        return True
+    return False
 
 
 def cmd_review(args: argparse.Namespace) -> int:
@@ -320,6 +474,29 @@ def cmd_review(args: argparse.Namespace) -> int:
         if missing:
             print(f"unknown reviewers: {missing}", file=sys.stderr)
             return 2
+        # Mock mode is allowed to use disabled / not-installed reviewers
+        # because the CLI is never actually invoked. Live mode requires
+        # both flags to be true — same contract as the auto-detect path.
+        if args.mock_dir is None:
+            disabled = [n for n in wanted if not adapters[n].enabled]
+            uninstalled = [n for n in wanted if not adapters[n].installed]
+            if disabled or uninstalled:
+                if disabled:
+                    print(
+                        f"reviewers disabled in adapters.toml: {disabled}",
+                        file=sys.stderr,
+                    )
+                if uninstalled:
+                    print(
+                        f"reviewers not installed: {uninstalled}",
+                        file=sys.stderr,
+                    )
+                print(
+                    "Edit scripts/adapters.toml to enable, install the CLI, "
+                    "or remove from --reviewers.",
+                    file=sys.stderr,
+                )
+                return 2
         adapters_to_use = {n: adapters[n] for n in wanted}
     else:
         adapters_to_use = {n: adapters[n] for n in available(adapters)}
@@ -335,12 +512,17 @@ def cmd_review(args: argparse.Namespace) -> int:
 
     workdir = Path(args.workdir).resolve() if args.workdir else Path.cwd()
     review_target = review_target_from_path(args.target)
-    domain_prompt = (
-        Path(args.domain_prompt).read_text()
-        if args.domain_prompt
-        else DEFAULT_DOMAIN_PROMPT
-    )
-
+    if args.domain_prompt:
+        domain_prompt_path = Path(args.domain_prompt)
+        if not domain_prompt_path.is_file():
+            print(
+                f"domain prompt file not found: {args.domain_prompt}",
+                file=sys.stderr,
+            )
+            return 2
+        domain_prompt = domain_prompt_path.read_text(encoding="utf-8")
+    else:
+        domain_prompt = DEFAULT_DOMAIN_PROMPT
     if args.out:
         out_dir = Path(args.out)
     else:
@@ -385,6 +567,12 @@ def cmd_review(args: argparse.Namespace) -> int:
 
     synth_name = args.synthesizer
     if synth_name not in adapters_to_use:
+        if not adapters_to_use:
+            print(
+                "no reviewers selected — cannot pick a synthesizer",
+                file=sys.stderr,
+            )
+            return 2
         synth_name = next(iter(adapters_to_use))
     t2 = time.monotonic()
     stage3_text = stage3_synthesize(
@@ -408,7 +596,9 @@ def cmd_review(args: argparse.Namespace) -> int:
         "stage2": {n: {k: v for k, v in r.items() if k != "stdout"} for n, r in stage2.items()},
         "wall_clock_sec": time.monotonic() - t0,
     }
-    (out_dir / "run.json").write_text(json.dumps(run_meta, indent=2))
+    (out_dir / "run.json").write_text(
+        json.dumps(run_meta, indent=2), encoding="utf-8"
+    )
 
     print(f"\n=== final findings ({out_dir}/findings.md) ===\n")
     print(stage3_text)
@@ -417,6 +607,9 @@ def cmd_review(args: argparse.Namespace) -> int:
 
 def cmd_list(_args: argparse.Namespace) -> int:
     adapters = load_adapters()
+    if not adapters:
+        print("(no adapters configured in adapters.toml)", file=sys.stderr)
+        return 0
     width = max(len(n) for n in adapters)
     for name, a in sorted(adapters.items()):
         status = "ENABLED" if a.enabled else "DISABLED"
