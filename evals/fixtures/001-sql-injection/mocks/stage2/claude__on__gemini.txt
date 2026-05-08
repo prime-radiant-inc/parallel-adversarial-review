@@ -1,0 +1,15 @@
+# Critique — claude on gemini
+
+- finding_ref: users.py:9
+  verdict: confirmed
+  reasoning: Identical to my own finding. Real critical SQLi.
+  suggested_severity: critical
+
+- finding_ref: users.py:18
+  verdict: fabricated
+  reasoning: The cited code at line 18 actually uses parameter binding
+    correctly (`(f"%@{domain}",)` is the second positional arg to
+    cur.execute, not interpolated into the SQL string). Gemini misread
+    the f-string in the bound parameter as in-SQL interpolation. This
+    is not a defect.
+  suggested_severity: drop

@@ -1,0 +1,29 @@
+# MMAR Final Findings
+
+## Critical
+
+(none)
+
+## Serious
+
+(none)
+
+## Minor
+
+(none)
+
+## Dropped (hallucination filter)
+
+- finding_ref: parser.py:11 from gemini
+  reason: 2 critics flagged as fabricated. "Could be passed a large
+    string" is a universal property of any string-handling function,
+    not a concrete defect. No unbounded resource use, no recursion,
+    no specific attack vector.
+
+## Summary
+
+- total findings: 0 critical, 0 serious, 0 minor
+- by severity: critical=0, serious=0, minor=0
+- dropped: 1
+- reviewers used: claude, codex, gemini
+- highest-confidence findings: (none)

@@ -1,0 +1,69 @@
+# MMAR CLI adapters.
+#
+# Each section defines how to invoke a coding-agent CLI in headless mode.
+# `argv` is a list of arguments. The driver passes the prompt via stdin
+# unless `prompt_via = "argv"`, in which case it appends the prompt as a
+# final positional argument.
+#
+# `timeout_sec` is per-invocation. `enabled = false` skips this CLI even
+# if installed.
+#
+# Add or fix entries here when CLIs change their flags. The driver reads
+# this file on every run.
+
+[claude]
+enabled = true
+binary = "claude"
+argv = ["--print", "--permission-mode", "plan"]
+prompt_via = "argv"
+timeout_sec = 300
+notes = "claude --print runs non-interactively. plan mode is read-only."
+
+[codex]
+enabled = true
+binary = "codex"
+argv = ["exec", "--sandbox", "read-only"]
+prompt_via = "argv"
+timeout_sec = 300
+notes = "codex exec is the non-interactive entry. read-only sandbox prevents writes."
+
+[gemini]
+enabled = true
+binary = "gemini"
+argv = ["--prompt", "--approval-mode", "plan", "--output-format", "text"]
+prompt_via = "argv-after-flag"
+prompt_flag = "--prompt"
+timeout_sec = 300
+notes = "gemini -p prompt runs headless. plan mode is read-only."
+
+[opencode]
+enabled = true
+binary = "opencode"
+argv = ["run"]
+prompt_via = "argv"
+timeout_sec = 300
+notes = "opencode run <message> is the non-interactive entry."
+
+[amp]
+enabled = true
+binary = "amp"
+argv = []
+prompt_via = "stdin"
+timeout_sec = 300
+notes = "amp reads the prompt from stdin in non-interactive mode."
+
+[aider]
+enabled = false
+binary = "aider"
+argv = ["--no-auto-commits", "--no-git", "--yes-always", "--exit", "--message"]
+prompt_via = "argv"
+timeout_sec = 300
+notes = "aider is read-style here; --exit prevents the interactive loop. Disabled by default because aider's primary mode is editing, not reviewing."
+
+[cursor-agent]
+enabled = false
+binary = "cursor-agent"
+argv = ["--print"]
+prompt_via = "argv"
+timeout_sec = 300
+notes = "cursor-agent help output is corrupted by its bundler; invocation flags are best-guess. Verify with `cursor-agent --print 'echo test'` before enabling."

@@ -1,0 +1,6 @@
+# Critique — gemini on codex
+
+- finding_ref: cache.py:16
+  verdict: confirmed
+  reasoning: Yes, leak on exception path is real. Quote matches.
+  suggested_severity: serious

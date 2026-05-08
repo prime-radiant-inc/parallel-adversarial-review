@@ -1,0 +1,22 @@
+{
+  "name": "parallel-adversarial-review",
+  "description": "Two skills for adversarial code review. parallel-adversarial-review dispatches two same-model reviewer subagents in parallel under a competitive scoring frame, aggregating findings and taking the worst severity on disagreement. multi-model-adversarial-review extends this to N installed coding-agent CLIs (claude, codex, gemini, opencode, amp, aider) with a cross-critique stage that catches hallucinations and severity inflation, then synthesizes a deduplicated report. Includes a fixture-based eval suite that scores precision and recall against planted defects.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Jesse Vincent",
+    "email": "jesse@primeradiant.com"
+  },
+  "license": "Apache-2.0",
+  "keywords": [
+    "code-review",
+    "adversarial",
+    "multi-model",
+    "evaluation"
+  ],
+  "components": {
+    "skills": [
+      "skills/parallel-adversarial-review",
+      "skills/multi-model-adversarial-review"
+    ]
+  }
+}

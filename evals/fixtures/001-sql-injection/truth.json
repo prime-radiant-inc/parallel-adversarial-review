@@ -1,0 +1,13 @@
+{
+  "description": "Classic SQL injection via f-string in get_user_by_username. The list_users_by_email_domain function uses parameter binding correctly and should NOT be flagged.",
+  "defects": [
+    {
+      "file": "users.py",
+      "line": 9,
+      "severity": "critical",
+      "category": "sql-injection",
+      "keywords": ["sql", "injection", "username", "fstring", "concat", "execute"],
+      "description": "username is interpolated into the SQL query via f-string, allowing SQL injection"
+    }
+  ]
+}

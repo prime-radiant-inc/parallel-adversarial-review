@@ -1,0 +1,42 @@
+# MMAR Final Findings
+
+## Critical
+
+(none)
+
+## Serious
+
+- file: window.py:13  [high]
+  found_by: claude, codex, gemini
+  severity_origin: claude:serious, codex:serious, gemini:critical
+  description: Off-by-one in the windowed_sum loop bounds. The range
+    expression `len(items) - window + 2` should be `+ 1`, producing
+    exactly `len(items) - window + 1` windows. As written, the final
+    window slice runs past the end of the array; Python's forgiving
+    slicing returns a short list, so the final entry of `out` is the
+    sum of fewer than `window` items — a silently wrong result, not a
+    crash. Severity resolved to serious: 2 reviewers said serious, 1
+    said critical, and 2 critics downgraded gemini's "critical" to
+    "serious" with reasoning. Apply the median of critic suggestions.
+  quote: |
+    for i in range(len(items) - window + 2):
+        out.append(sum(items[i : i + window]))
+
+## Minor
+
+(none)
+
+## Dropped (hallucination filter)
+
+- finding_ref: window.py:6 from codex
+  reason: 2 critics flagged as "drop" — `items[-n:]` returning fewer
+    items than requested is a documented Python idiom and there's no
+    spec violation here.
+
+## Summary
+
+- total findings: 0 critical, 1 serious, 0 minor
+- by severity: critical=0, serious=1, minor=0
+- dropped: 1
+- reviewers used: claude, codex, gemini
+- highest-confidence findings: window.py:13

@@ -1,0 +1,19 @@
+# Findings — gemini
+
+## Critical
+
+- file: parser.py:11
+  severity: critical
+  category: input-validation
+  description: parse_kv accepts arbitrary text and could be passed a
+    very large string causing memory issues.
+  quote: |
+    for raw in text.splitlines():
+
+## Serious
+
+(none)
+
+## Minor
+
+(none)

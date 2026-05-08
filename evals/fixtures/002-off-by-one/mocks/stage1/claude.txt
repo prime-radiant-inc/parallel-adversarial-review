@@ -1,0 +1,22 @@
+# Findings — claude
+
+## Critical
+
+(none)
+
+## Serious
+
+- file: window.py:13
+  severity: serious
+  category: off-by-one
+  description: Loop range is `range(len(items) - window + 2)`, which produces
+    one too many windows. The last window starts at index `len(items) - window + 1`
+    and slices past the end, returning a short window with sum < expected.
+    Should be `+ 1`, not `+ 2`.
+  quote: |
+    for i in range(len(items) - window + 2):
+        out.append(sum(items[i : i + window]))
+
+## Minor
+
+(none)

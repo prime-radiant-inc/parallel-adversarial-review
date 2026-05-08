@@ -1,0 +1,6 @@
+# Critique — gemini on claude
+
+- finding_ref: users.py:9
+  verdict: confirmed
+  reasoning: Same finding I made. Quote matches.
+  suggested_severity: critical

@@ -1,0 +1,6 @@
+# Critique — codex on claude
+
+- finding_ref: window.py:13
+  verdict: confirmed
+  reasoning: Same finding I made.
+  suggested_severity: serious

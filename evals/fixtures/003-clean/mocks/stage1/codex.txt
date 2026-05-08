@@ -1,0 +1,13 @@
+# Findings — codex
+
+## Critical
+
+(none)
+
+## Serious
+
+(none)
+
+## Minor
+
+- parser.py: ValueError message could include the line number for easier debugging

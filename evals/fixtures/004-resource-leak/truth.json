@@ -1,0 +1,13 @@
+{
+  "description": "File handle leak in read_value: if json.load or the isinstance check raises, f.close() is never called.",
+  "defects": [
+    {
+      "file": "cache.py",
+      "line": 16,
+      "severity": "serious",
+      "category": "resource-leak",
+      "keywords": ["leak", "close", "context", "manager", "file", "handle", "exception"],
+      "description": "file handle leaked on exception path; should use `with` context manager"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+# Critique — claude on codex
+
+- finding_ref: users.py:9
+  verdict: confirmed
+  reasoning: The quote matches the file. f-string interpolation of an
+    untrusted parameter into SQL is textbook critical SQLi.
+  suggested_severity: critical
+
+- finding_ref: users.py:14
+  verdict: downgraded
+  reasoning: Lack of input validation is not itself a defect of this
+    function; it's a generic concern. Should be minor at most.
+  suggested_severity: minor

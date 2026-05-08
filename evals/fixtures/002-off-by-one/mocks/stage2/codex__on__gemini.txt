@@ -1,0 +1,7 @@
+# Critique — codex on gemini
+
+- finding_ref: window.py:13
+  verdict: downgraded
+  reasoning: Real but not critical. Slicing is forgiving in Python; the
+    consequence is a wrong sum, not a crash. Serious is appropriate.
+  suggested_severity: serious

@@ -1,0 +1,22 @@
+# Findings — gemini
+
+## Critical
+
+- file: window.py:13
+  severity: critical
+  category: index-out-of-bounds
+  description: The loop iterates one extra time, causing the slice
+    items[i : i + window] to extend past the end of the array on the
+    final iteration. This may not raise an error in Python (slicing
+    is forgiving) but will produce a shorter window with a wrong sum.
+  quote: |
+    for i in range(len(items) - window + 2):
+        out.append(sum(items[i : i + window]))
+
+## Serious
+
+(none)
+
+## Minor
+
+(none)

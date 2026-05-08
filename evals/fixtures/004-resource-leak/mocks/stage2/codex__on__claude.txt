@@ -1,0 +1,6 @@
+# Critique — codex on claude
+
+- finding_ref: cache.py:16
+  verdict: confirmed
+  reasoning: Real leak. Quote matches.
+  suggested_severity: serious

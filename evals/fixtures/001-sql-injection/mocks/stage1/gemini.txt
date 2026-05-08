@@ -1,0 +1,30 @@
+# Findings — gemini
+
+## Critical
+
+- file: users.py:9
+  severity: critical
+  category: injection
+  description: SQL injection — the username is concatenated into the
+    query string via an f-string. An attacker can break out of the
+    quotes and execute arbitrary SQL.
+  quote: |
+    query = f"SELECT id, username, email FROM users WHERE username = '{username}'"
+    cur.execute(query)
+
+## Serious
+
+- file: users.py:18
+  severity: serious
+  category: sql-injection
+  description: list_users_by_email_domain interpolates the domain string
+    into the LIKE pattern, which is also injectable.
+  quote: |
+    cur.execute(
+        "SELECT id, username, email FROM users WHERE email LIKE ?",
+        (f"%@{domain}",),
+    )
+
+## Minor
+
+(none)

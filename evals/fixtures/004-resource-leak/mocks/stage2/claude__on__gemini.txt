@@ -1,0 +1,8 @@
+# Critique — claude on gemini
+
+- finding_ref: (gemini reported only a stylistic minor)
+  verdict: downgraded
+  reasoning: gemini missed the actual resource leak — they noted the
+    style mismatch but did not call out that it's a real defect on
+    exception paths. The minor entry is true but undersells the issue.
+  suggested_severity: minor

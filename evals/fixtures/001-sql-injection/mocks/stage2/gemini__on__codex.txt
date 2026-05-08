@@ -1,0 +1,11 @@
+# Critique — gemini on codex
+
+- finding_ref: users.py:9
+  verdict: confirmed
+  reasoning: Real SQLi.
+  suggested_severity: critical
+
+- finding_ref: users.py:14
+  verdict: downgraded
+  reasoning: Generic input validation concern; not a concrete defect.
+  suggested_severity: minor

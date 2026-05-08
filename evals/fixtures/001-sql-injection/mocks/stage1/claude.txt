@@ -1,0 +1,23 @@
+# Findings — claude
+
+## Critical
+
+- file: users.py:9
+  severity: critical
+  category: sql-injection
+  description: The username parameter is interpolated into the SQL query
+    via an f-string, which allows a caller passing a malicious username
+    (e.g. `' OR 1=1 --`) to execute arbitrary SQL. The neighbouring
+    function `list_users_by_email_domain` shows the correct pattern using
+    parameter binding; `get_user_by_username` should use the same.
+  quote: |
+    query = f"SELECT id, username, email FROM users WHERE username = '{username}'"
+    cur.execute(query)
+
+## Serious
+
+(none)
+
+## Minor
+
+- users.py: docstring on get_user_by_username could mention the new behavior

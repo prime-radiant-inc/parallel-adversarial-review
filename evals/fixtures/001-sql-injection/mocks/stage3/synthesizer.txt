@@ -1,0 +1,41 @@
+# MMAR Final Findings
+
+## Critical
+
+- file: users.py:9  [high]
+  found_by: claude, codex, gemini
+  severity_origin: claude:critical, codex:critical, gemini:critical
+  description: SQL injection. The `username` parameter is interpolated
+    into the SQL query via an f-string before being passed to
+    cur.execute, allowing arbitrary SQL execution. The neighbouring
+    list_users_by_email_domain function uses parameter binding
+    correctly and should be the model. Replace the f-string with a
+    parameterized query (`WHERE username = ?`, with `(username,)` as
+    the second arg to execute).
+  quote: |
+    query = f"SELECT id, username, email FROM users WHERE username = '{username}'"
+    cur.execute(query)
+
+## Serious
+
+(none)
+
+## Minor
+
+- users.py:14 — codex flagged generic lack of input validation; downgraded by 2 critics. Found_by: codex.
+
+## Dropped (hallucination filter)
+
+- finding_ref: users.py:18 from gemini
+  reason: claude and codex both flagged as fabricated. The cited line
+    uses parameter binding correctly (the f-string `f"%@{domain}"` is
+    the bound parameter value, not in-SQL interpolation). Gemini
+    misread the structure.
+
+## Summary
+
+- total findings: 1 critical, 0 serious, 1 minor
+- by severity: critical=1, serious=0, minor=1
+- dropped: 1
+- reviewers used: claude, codex, gemini
+- highest-confidence findings: users.py:9

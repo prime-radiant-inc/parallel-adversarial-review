@@ -1,0 +1,7 @@
+# Critique — codex on gemini
+
+- finding_ref: parser.py:11
+  verdict: fabricated
+  reasoning: No specific defect described; just a generic worry that
+    applies to any string-processing function.
+  suggested_severity: drop

@@ -1,0 +1,6 @@
+# Critique — gemini on claude
+
+- finding_ref: window.py:13
+  verdict: confirmed
+  reasoning: Real off-by-one.
+  suggested_severity: serious

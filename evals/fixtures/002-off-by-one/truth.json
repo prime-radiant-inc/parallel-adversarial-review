@@ -1,0 +1,13 @@
+{
+  "description": "Off-by-one in windowed_sum: the loop range overruns by one, producing one bogus window at the end that goes past the array.",
+  "defects": [
+    {
+      "file": "window.py",
+      "line": 13,
+      "severity": "serious",
+      "category": "off-by-one",
+      "keywords": ["off", "range", "window", "overrun", "bounds", "index"],
+      "description": "loop range is len(items) - window + 2, should be + 1"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+# Findings — codex
+
+## Serious
+
+- file: cache.py:16
+  severity: serious
+  category: file-handle-leak
+  description: File handle leaked on exception paths. Either json.load
+    raising or the explicit ValueError on type-check skips f.close().
+    Should use `with path.open("r") as f:`.
+  quote: |
+    f = path.open("r")
+
+## Minor
+
+(none)

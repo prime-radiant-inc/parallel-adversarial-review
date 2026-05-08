@@ -1,0 +1,21 @@
+# Findings — claude
+
+## Serious
+
+- file: cache.py:16
+  severity: serious
+  category: resource-leak
+  description: read_value opens a file via path.open("r") and only closes
+    it on the success path. If json.load raises, or the isinstance check
+    raises ValueError, f.close() is never called and the file handle
+    leaks. Use a `with` context manager.
+  quote: |
+    f = path.open("r")
+    data = json.load(f)
+    if not isinstance(data, dict):
+        raise ValueError("cache value is not a dict")
+    f.close()
+
+## Minor
+
+(none)

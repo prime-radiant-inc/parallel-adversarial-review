@@ -1,0 +1,27 @@
+# Findings — codex
+
+## Critical
+
+- file: users.py:9
+  severity: critical
+  category: sql-injection
+  description: f-string interpolation builds the SQL string from the
+    untrusted username argument before calling cur.execute. Use a
+    parameterized query with `?` placeholders instead.
+  quote: |
+    query = f"SELECT id, username, email FROM users WHERE username = '{username}'"
+
+## Serious
+
+- file: users.py:14
+  severity: serious
+  category: input-validation
+  description: get_user_by_username does not validate or normalize the
+    username (length, casing, allowed characters). This is not a defect
+    on its own but compounds the injection risk.
+  quote: |
+    return {"id": row[0], "username": row[1], "email": row[2]}
+
+## Minor
+
+(none)

@@ -1,0 +1,17 @@
+# Findings — codex
+
+## Serious
+
+- file: window.py:13
+  severity: serious
+  category: off-by-one
+  description: Off-by-one in the windowed_sum loop bounds. The +2 should
+    be +1 to produce the correct number of windows.
+  quote: |
+    for i in range(len(items) - window + 2):
+
+## Minor
+
+- file: window.py:6
+  description: last_n returns items[-n:] which silently returns fewer
+    items than requested if n > len(items). May or may not be intended.

@@ -1,0 +1,40 @@
+# MMAR Final Findings
+
+## Critical
+
+(none)
+
+## Serious
+
+- file: cache.py:16  [high]
+  found_by: claude, codex
+  severity_origin: claude:serious, codex:serious
+  description: File handle leak in read_value. The function opens the
+    file via `path.open("r")` (no context manager), then calls
+    json.load and an isinstance check before f.close(). If either raises
+    (malformed JSON or non-dict cache value), f.close() is skipped and
+    the file handle leaks. Replace with `with path.open("r") as f:`.
+    All 4 critics that examined this confirmed.
+  quote: |
+    f = path.open("r")
+    data = json.load(f)
+    if not isinstance(data, dict):
+        raise ValueError("cache value is not a dict")
+    f.close()
+
+## Minor
+
+- cache.py — gemini noted style mismatch with write_value (which uses
+  `with` correctly). Found_by: gemini.
+
+## Dropped (hallucination filter)
+
+(none)
+
+## Summary
+
+- total findings: 0 critical, 1 serious, 1 minor
+- by severity: critical=0, serious=1, minor=1
+- dropped: 0
+- reviewers used: claude, codex, gemini
+- highest-confidence findings: cache.py:16

@@ -1,0 +1,8 @@
+# Critique — claude on gemini
+
+- finding_ref: window.py:13
+  verdict: downgraded
+  reasoning: Real defect, but "critical" overstates impact — Python
+    slicing won't raise; you get a wrong-but-not-crashing result. Serious
+    is the right severity.
+  suggested_severity: serious

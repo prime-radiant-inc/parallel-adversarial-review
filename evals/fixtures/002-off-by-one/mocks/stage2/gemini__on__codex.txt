@@ -1,0 +1,11 @@
+# Critique — gemini on codex
+
+- finding_ref: window.py:13
+  verdict: confirmed
+  reasoning: Same.
+  suggested_severity: serious
+
+- finding_ref: window.py:6
+  verdict: downgraded
+  reasoning: Idiom, not a defect.
+  suggested_severity: drop

@@ -1,0 +1,9 @@
+# Critique — claude on gemini
+
+- finding_ref: parser.py:11
+  verdict: fabricated
+  reasoning: "Could be passed a large string" is not a defect — it's a
+    universal property of any function that takes a string. There is no
+    actual unbounded resource use, no recursion, no memory amplification.
+    Pure speculative concern, not a real finding.
+  suggested_severity: drop

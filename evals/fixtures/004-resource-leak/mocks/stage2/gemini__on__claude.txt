@@ -1,0 +1,7 @@
+# Critique — gemini on claude
+
+- finding_ref: cache.py:16
+  verdict: confirmed
+  reasoning: I missed this in my own pass. The finding is correct: the
+    file handle leaks on exception paths because close is unconditional.
+  suggested_severity: serious

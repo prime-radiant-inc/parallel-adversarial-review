@@ -1,0 +1,12 @@
+# Critique — claude on codex
+
+- finding_ref: window.py:13
+  verdict: confirmed
+  reasoning: Real off-by-one. Quote matches.
+  suggested_severity: serious
+
+- finding_ref: window.py:6
+  verdict: downgraded
+  reasoning: This is a documented Python idiom; not a defect unless the
+    contract was violated. No spec was given.
+  suggested_severity: drop

@@ -1,0 +1,12 @@
+# Critique — codex on gemini
+
+- finding_ref: users.py:9
+  verdict: confirmed
+  reasoning: Real SQLi.
+  suggested_severity: critical
+
+- finding_ref: users.py:18
+  verdict: fabricated
+  reasoning: Parameter binding is used correctly here; the f-string is
+    the bound parameter value, not part of the SQL.
+  suggested_severity: drop

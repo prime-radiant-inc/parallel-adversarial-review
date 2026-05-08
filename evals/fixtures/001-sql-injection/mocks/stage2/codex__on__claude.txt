@@ -1,0 +1,6 @@
+# Critique — codex on claude
+
+- finding_ref: users.py:9
+  verdict: confirmed
+  reasoning: Quote matches file content; SQL injection is real.
+  suggested_severity: critical

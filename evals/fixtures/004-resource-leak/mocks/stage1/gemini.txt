@@ -1,0 +1,13 @@
+# Findings — gemini
+
+## Critical
+
+(none)
+
+## Serious
+
+(none)
+
+## Minor
+
+- cache.py: write_value uses `with` correctly; read_value should match style.

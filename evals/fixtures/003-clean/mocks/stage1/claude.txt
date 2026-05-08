@@ -1,0 +1,13 @@
+# Findings — claude
+
+## Critical
+
+(none)
+
+## Serious
+
+(none)
+
+## Minor
+
+(none)
