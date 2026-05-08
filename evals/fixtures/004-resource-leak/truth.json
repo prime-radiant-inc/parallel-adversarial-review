@@ -1,5 +1,5 @@
 {
-  "description": "File handle leak in read_value: if json.load or the isinstance check raises, f.close() is never called.",
+  "description": "Two real defects: (1) file handle leak in read_value when json.load or the isinstance check raises, and (2) path traversal — both write_value (line 9) and read_value (line 15) interpolate an unsanitized `key` into the file path, so a key containing `../` or an absolute path can escape cache_dir. Live eval surfaced (2) — codex and gemini independently flagged it as critical, which is correct.",
   "defects": [
     {
       "file": "cache.py",
@@ -8,6 +8,14 @@
       "category": "resource-leak",
       "keywords": ["leak", "close", "context", "manager", "file", "handle", "exception"],
       "description": "file handle leaked on exception path; should use `with` context manager"
+    },
+    {
+      "file": "cache.py",
+      "line": 9,
+      "severity": "critical",
+      "category": "path-traversal",
+      "keywords": ["path", "traversal", "key", "sanitize", "escape", "directory"],
+      "description": "key interpolated into path without sanitization in both write_value (line 9) and read_value (line 15); attacker-controlled key can escape cache_dir"
     }
   ]
 }

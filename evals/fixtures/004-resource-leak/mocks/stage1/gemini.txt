@@ -2,7 +2,15 @@
 
 ## Critical
 
-(none)
+- file: cache.py:9
+  severity: critical
+  category: path-traversal
+  description: Path injection via the `key` argument. Both write_value
+    and read_value build the path by interpolating `key` directly. An
+    attacker-controlled key with `../` segments or an absolute path can
+    escape cache_dir, causing arbitrary file read/write.
+  quote: |
+    path = cache_dir / f"{key}.json"
 
 ## Serious
 

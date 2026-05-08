@@ -2,7 +2,19 @@
 
 ## Critical
 
-(none)
+- file: cache.py:9  [high]
+  found_by: codex, gemini
+  severity_origin: codex:critical, gemini:critical
+  description: Path traversal. Both write_value (line 9) and read_value
+    (line 15) build the cache file path by interpolating the unsanitized
+    `key` parameter: `path = cache_dir / f"{key}.json"`. Path's `/`
+    operator does not sanitize — a key containing `../../etc/passwd`
+    or an absolute path will resolve outside cache_dir, allowing
+    arbitrary file read or overwrite. Sanitize the key (allowlist of
+    safe characters) or use `cache_dir.joinpath(key + ".json").resolve()`
+    and verify the result is still under cache_dir.resolve().
+  quote: |
+    path = cache_dir / f"{key}.json"
 
 ## Serious
 
@@ -14,7 +26,6 @@
     json.load and an isinstance check before f.close(). If either raises
     (malformed JSON or non-dict cache value), f.close() is skipped and
     the file handle leaks. Replace with `with path.open("r") as f:`.
-    All 4 critics that examined this confirmed.
   quote: |
     f = path.open("r")
     data = json.load(f)
@@ -33,8 +44,8 @@
 
 ## Summary
 
-- total findings: 0 critical, 1 serious, 1 minor
-- by severity: critical=0, serious=1, minor=1
+- total findings: 1 critical, 1 serious, 1 minor
+- by severity: critical=1, serious=1, minor=0
 - dropped: 0
 - reviewers used: claude, codex, gemini
-- highest-confidence findings: cache.py:16
+- highest-confidence findings: cache.py:9, cache.py:16

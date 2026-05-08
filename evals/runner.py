@@ -114,6 +114,11 @@ def evaluate_fixture(
         # negative-case fixture — recall is N/A; we just need precision = 1
         # (zero false positives) for it to pass.
         passed = detail["fp"] == 0
+        # Override precision in detail too: the score() function returns 0.0
+        # when (tp + fp) == 0, but for a negative case we want to report
+        # "no false positives" as precision 1.0.
+        if detail["fp"] == 0:
+            detail = {**detail, "precision": 1.0, "f1": 1.0}
         return FixtureResult(
             fixture=fixture.name,
             truth_count=0,

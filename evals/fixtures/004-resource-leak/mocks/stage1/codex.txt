@@ -1,5 +1,18 @@
 # Findings — codex
 
+## Critical
+
+- file: cache.py:9
+  severity: critical
+  category: path-traversal
+  description: write_value interpolates the unsanitized `key` parameter
+    into the cache file path via `cache_dir / f"{key}.json"`. Path's `/`
+    operator does not sanitize, so a key like `"../../etc/passwd"` or
+    an absolute path will resolve outside cache_dir, allowing arbitrary
+    file overwrite. The same bug exists in read_value at line 15.
+  quote: |
+    path = cache_dir / f"{key}.json"
+
 ## Serious
 
 - file: cache.py:16
