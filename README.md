@@ -26,18 +26,22 @@ The driver is `scripts/mmar.py`. CLI invocations are configured in `scripts/adap
 
 ```
 $ python3 scripts/mmar.py list
-aider         DISABLED  installed   aider
-amp           ENABLED   installed   amp
-claude        ENABLED   installed   claude
-codex         ENABLED   installed   codex
-cursor-agent  DISABLED  installed   cursor-agent
-gemini        ENABLED   installed   gemini
-opencode      ENABLED   installed   opencode
+amp       DISABLED  installed   amp
+claude    ENABLED   installed   claude
+codex     ENABLED   installed   codex
+droid     DISABLED  installed   droid
+gemini    ENABLED   installed   gemini
+opencode  ENABLED   installed   opencode
+pi        ENABLED   installed   pi
 
 $ python3 scripts/mmar.py review path/to/diff_or_file_or_dir \
     --reviewers claude,codex,gemini \
     --out ./.mmar/run-1
 ```
+
+**Default-on tier:** `claude`, `codex`, `gemini`, `pi`, `opencode` — enabled if installed.
+
+**Opt-in tier (enabled=false by default):** `amp` and `droid` (Factory). Flip to `enabled=true` in `adapters.toml` after configuring credentials (`amp login` / Factory account).
 
 For evals/CI, replace live CLI invocations with pre-recorded responses:
 

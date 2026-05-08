@@ -3,13 +3,16 @@
 # Each section defines how to invoke a coding-agent CLI in headless mode.
 # `argv` is a list of arguments. The driver passes the prompt via stdin
 # unless `prompt_via = "argv"`, in which case it appends the prompt as a
-# final positional argument.
+# final positional argument. `argv-after-flag` inserts the prompt right
+# after `prompt_flag` in argv (some CLIs require this).
 #
 # `timeout_sec` is per-invocation. `enabled = false` skips this CLI even
 # if installed.
 #
 # Add or fix entries here when CLIs change their flags. The driver reads
 # this file on every run.
+
+# --- Default-on tier: the canonical reviewers ---
 
 [claude]
 enabled = true
@@ -36,6 +39,14 @@ prompt_flag = "--prompt"
 timeout_sec = 300
 notes = "gemini -p prompt runs headless. plan mode is read-only."
 
+[pi]
+enabled = true
+binary = "pi"
+argv = ["--print"]
+prompt_via = "argv"
+timeout_sec = 300
+notes = "pi from pi.dev. --print runs headless and exits."
+
 [opencode]
 enabled = true
 binary = "opencode"
@@ -44,26 +55,20 @@ prompt_via = "argv"
 timeout_sec = 300
 notes = "opencode run <message> is the non-interactive entry."
 
+# --- Opt-in tier: enable these only if you have them configured ---
+
 [amp]
-enabled = true
+enabled = false
 binary = "amp"
 argv = []
 prompt_via = "stdin"
 timeout_sec = 300
-notes = "amp reads the prompt from stdin in non-interactive mode."
+notes = "amp from Sourcegraph. Reads prompt from stdin. Set enabled=true after `amp login` and confirming AMP_API_KEY works."
 
-[aider]
+[droid]
 enabled = false
-binary = "aider"
-argv = ["--no-auto-commits", "--no-git", "--yes-always", "--exit", "--message"]
+binary = "droid"
+argv = ["exec"]
 prompt_via = "argv"
 timeout_sec = 300
-notes = "aider is read-style here; --exit prevents the interactive loop. Disabled by default because aider's primary mode is editing, not reviewing."
-
-[cursor-agent]
-enabled = false
-binary = "cursor-agent"
-argv = ["--print"]
-prompt_via = "argv"
-timeout_sec = 300
-notes = "cursor-agent help output is corrupted by its bundler; invocation flags are best-guess. Verify with `cursor-agent --print 'echo test'` before enabling."
+notes = "Factory's droid. `droid exec` is read-only by default. Set enabled=true after configuring Factory credentials."
