@@ -1,0 +1,14 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: parallel-adversarial-review
+  description: "Two Claude Code skills for adversarial code review (single-model PAR and multi-model MMAR with cross-critique) plus a fixture-based eval suite."
+  annotations:
+    backstage.io/techdocs-ref: dir:.
+    prime-radiant.com/repo-map-rev: "22a66b6483aa73d05fef1e667c76e53659358cf5"
+  tags: [python, code-review]
+spec:
+  type: tool
+  lifecycle: experimental
+  owner: unknown
+  system: superpowers
