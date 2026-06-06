@@ -2,7 +2,7 @@
 
 > Two skills for adversarial code review (single-model PAR and multi-model MMAR with cross-critique to catch hallucinations) plus a fixture-based eval suite.
 
-**Family:** superpowers · **Type:** tool · **Lifecycle:** experimental · **Owner:** unknown (anonymous commits by Jesse Vincent; no GitHub login on contributors API)
+**Family:** superpowers · **Type:** tool · **Lifecycle:** experimental · **Owner:** obra
 
 ## What it does
 parallel-adversarial-review dispatches two same-model reviewer subagents in parallel under a competitive scoring frame, aggregating findings and taking the worst severity on disagreement (ported from iterative-development). multi-model-adversarial-review (MMAR) extends this to N installed coding-agent CLIs with a three-stage pipeline: parallel reviews, a cross-critique grid where each reviewer verifies the others' findings, then synthesis into a deduplicated report. The driver is scripts/mmar.py with CLI invocations configured in adapters.toml. A fixture-based eval suite scores precision and recall against planted defects.
